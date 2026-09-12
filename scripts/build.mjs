@@ -6,7 +6,7 @@ const SOURCE =
   "https://ulug-saltanat-lugati.qodirjonovazohida9.chatgpt.site/";
 
 const root = process.cwd();
-const src = path.join(root, "src");
+const src = path.join(root, "Src");
 const dist = path.join(root, "dist");
 
 await fs.rm(dist, { recursive: true, force: true });
