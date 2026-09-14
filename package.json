@@ -7,6 +7,6 @@
     "build": "node scripts/build.mjs"
   },
   "dependencies": {
-    "cheerio": "^1.0.0"
+    "@netlify/blobs": "^10.0.0"
   }
 }
