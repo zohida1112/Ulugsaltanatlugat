@@ -33,4 +33,8 @@ MUHIM:
 - Yangi sayt ishga tushmaguncha BillurCOMdagi eski DNS yozuvlarini o‘chirmang.
 - Birinchi build muvaffaqiyatli bo‘lgach saytning ishlashi chatgpt.site ga bog‘liq emas.
 - dist/data.json nashr qilingan deployment ichida saqlanadi.
-- Keyinchalik bazani o‘zingiz boshqarishingiz uchun admin panel qo‘shish mumkin.
+- Admin panel manzili: https://ulugsaltanatlugat.uz/admin.html
+- Netlify panelida Site configuration -> Environment variables bo‘limiga
+  ADMIN_PASSWORD nomi bilan faqat o‘zingiz biladigan kuchli parol kiriting.
+- Admin panel orqali so‘z qo‘shish, tahrirlash va o‘chirish mumkin.
+- Saqlangan o‘zgarishlar Netlify Blobs bazasida turadi va barcha tashrifchilarga ko‘rinadi.
