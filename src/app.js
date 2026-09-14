@@ -1,10 +1,41 @@
 let DATA=[];
+
 const $=s=>document.querySelector(s);
-const norm=s=>(s||"").toLocaleLowerCase("uz-UZ").replace(/[’‘ʻ`]/g,"'").trim();
-const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+const norm=s=>(s||"")
+  .toLocaleLowerCase("uz-UZ")
+  .replace(/[’‘ʻ`]/g,"'")
+  .trim();
+
+const esc=s=>String(s??"").replace(
+  /[&<>"']/g,
+  c=>({
+    "&":"&amp;",
+    "<":"&lt;",
+    ">":"&gt;",
+    '"':"&quot;",
+    "'":"&#39;"
+  }[c])
+);
+
+/* Istorizm va Arxaizm uchun alohida rang sinfi */
+const typeClass=type=>{
+  const normalizedType=norm(type);
+
+  if(normalizedType.includes("istorizm")){
+    return "badge badge-history";
+  }
+
+  if(normalizedType.includes("arxaizm")){
+    return "badge badge-archaic";
+  }
+
+  return "badge";
+};
 
 function opt(sel,values){
   const base=sel.innerHTML;
+
   sel.innerHTML=base+[...new Set(values.filter(Boolean))]
     .sort((a,b)=>a.localeCompare(b,"uz"))
     .map(v=>`<option value="${esc(v)}">${esc(v)}</option>`)
@@ -39,7 +70,11 @@ function render(){
     <tr>
       <td>${r.id}</td>
       <td>${esc(r.headword)}</td>
-      <td><span class="badge">${esc(r.type)}</span></td>
+      <td>
+        <span class="${typeClass(r.type)}">
+          ${esc(r.type)}
+        </span>
+      </td>
       <td>${esc(r.lexicalField)}</td>
       <td>${esc(r.microfield)}</td>
       <td>${esc(r.modernMeaning)}</td>
@@ -50,10 +85,17 @@ function render(){
   $("#cards").innerHTML=out.map(r=>`
     <article class="card">
       <h4>${esc(r.headword)}</h4>
-      <span class="badge">${esc(r.type)}</span>
+
+      <span class="${typeClass(r.type)}">
+        ${esc(r.type)}
+      </span>
+
       <p>${esc(r.modernMeaning)}</p>
+
       <div class="meta">
-        ${esc(r.lexicalField)} · ${esc(r.microfield)} · ${esc(r.firstPage)}-sahifa
+        ${esc(r.lexicalField)} ·
+        ${esc(r.microfield)} ·
+        ${esc(r.firstPage)}-sahifa
       </div>
     </article>
   `).join("");
@@ -68,7 +110,10 @@ async function getData(){
 
     if(response.ok){
       const current=await response.json();
-      if(Array.isArray(current)&&current.length)return current;
+
+      if(Array.isArray(current)&&current.length){
+        return current;
+      }
     }
   }catch{}
 
@@ -85,12 +130,15 @@ async function start(){
   DATA=await getData();
 
   $("#total").textContent=DATA.length;
+
   $("#hist").textContent=DATA.filter(
     r=>norm(r.type).includes("istorizm")
   ).length;
+
   $("#arch").textContent=DATA.filter(
     r=>norm(r.type).includes("arxaizm")
   ).length;
+
   $("#macros").textContent=
     new Set(DATA.map(r=>r.lexicalField)).size;
 
