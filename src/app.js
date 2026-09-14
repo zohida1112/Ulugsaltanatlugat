@@ -1,104 +1,166 @@
 let DATA=[];
 
-const $=s=>document.querySelector(s);
+const $=selector=>document.querySelector(selector);
 
-const norm=s=>(s||"")
+const norm=value=>String(value??"")
   .toLocaleLowerCase("uz-UZ")
   .replace(/[’‘ʻ`]/g,"'")
   .trim();
 
-const esc=s=>String(s??"").replace(
+const esc=value=>String(value??"").replace(
   /[&<>"']/g,
-  c=>({
+  character=>({
     "&":"&amp;",
     "<":"&lt;",
     ">":"&gt;",
     '"':"&quot;",
     "'":"&#39;"
-  }[c])
+  }[character])
 );
 
-/* Istorizm va Arxaizm uchun alohida rang sinfi */
-const typeClass=type=>{
-  const normalizedType=norm(type);
+const show=value=>{
+  const text=String(value??"").trim();
+  return text ? esc(text) : "—";
+};
 
-  if(normalizedType.includes("istorizm")){
+const typeClass=type=>{
+  const value=norm(type);
+
+  if(value.includes("istorizm")){
     return "badge badge-history";
   }
 
-  if(normalizedType.includes("arxaizm")){
+  if(value.includes("arxaizm")){
     return "badge badge-archaic";
   }
 
   return "badge";
 };
 
-function opt(sel,values){
-  const base=sel.innerHTML;
+function addOptions(select,values){
+  const firstOption=select.innerHTML;
 
-  sel.innerHTML=base+[...new Set(values.filter(Boolean))]
+  const options=[...new Set(values.filter(Boolean))]
     .sort((a,b)=>a.localeCompare(b,"uz"))
-    .map(v=>`<option value="${esc(v)}">${esc(v)}</option>`)
+    .map(value=>`
+      <option value="${esc(value)}">${esc(value)}</option>
+    `)
     .join("");
+
+  select.innerHTML=firstOption+options;
+}
+
+function detailRow(label,value,wide=false){
+  return `
+    <div class="detail-item${wide?" detail-wide":""}">
+      <span>${label}</span>
+      <p>${show(value)}</p>
+    </div>
+  `;
+}
+
+function openDetails(id){
+  const item=DATA.find(entry=>String(entry.id)===String(id));
+
+  if(!item){
+    return;
+  }
+
+  $("#detailsContent").innerHTML=`
+    <span class="${typeClass(item.type)}">${show(item.type)}</span>
+    <h2 class="detail-title">${show(item.headword)}</h2>
+
+    <div class="details-grid">
+      ${detailRow("Hozirgi ma’nosi",item.modernMeaning,true)}
+      ${detailRow("Makromaydon",item.lexicalField)}
+      ${detailRow("Mikromaydon",item.microfield)}
+      ${detailRow("Asardagi kontekst",item.context,true)}
+      ${detailRow("Kitob qismi",item.book)}
+      ${detailRow("Birinchi sahifa",item.firstPage)}
+      ${detailRow("Uchrash sahifalari",item.pages,true)}
+      ${detailRow("Tasniflash asosi",item.classificationBasis,true)}
+      ${detailRow("Ishonchlilik",item.confidence)}
+      ${detailRow("Izoh",item.note,true)}
+    </div>
+  `;
+
+  $("#details").showModal();
 }
 
 function render(){
-  const q=norm($("#q").value);
-  const t=$("#type").value;
-  const ma=$("#macro").value;
-  const mi=$("#micro").value;
+  const query=norm($("#q").value);
+  const selectedType=$("#type").value;
+  const selectedMacro=$("#macro").value;
+  const selectedMicro=$("#micro").value;
 
-  const out=DATA.filter(r=>{
-    const hay=norm([
-      r.headword,
-      r.type,
-      r.lexicalField,
-      r.microfield,
-      r.modernMeaning,
-      r.pages
+  const output=DATA.filter(item=>{
+    const searchable=norm([
+      item.headword,
+      item.type,
+      item.lexicalField,
+      item.microfield,
+      item.modernMeaning,
+      item.context,
+      item.pages,
+      item.note
     ].join(" "));
 
-    return(!q||hay.includes(q))&&
-      (!t||r.type===t)&&
-      (!ma||r.lexicalField===ma)&&
-      (!mi||r.microfield===mi);
+    return(!query||searchable.includes(query))&&
+      (!selectedType||item.type===selectedType)&&
+      (!selectedMacro||item.lexicalField===selectedMacro)&&
+      (!selectedMicro||item.microfield===selectedMicro);
   });
 
-  $("#count").textContent=out.length;
+  $("#count").textContent=output.length;
 
-  $("#rows").innerHTML=out.map(r=>`
-    <tr>
-      <td>${r.id}</td>
-      <td>${esc(r.headword)}</td>
+  $("#rows").innerHTML=output.map(item=>`
+    <tr class="word-row" data-open="${item.id}" tabindex="0">
+      <td>${show(item.id)}</td>
+      <td>${show(item.headword)}</td>
       <td>
-        <span class="${typeClass(r.type)}">
-          ${esc(r.type)}
-        </span>
+        <span class="${typeClass(item.type)}">${show(item.type)}</span>
       </td>
-      <td>${esc(r.lexicalField)}</td>
-      <td>${esc(r.microfield)}</td>
-      <td>${esc(r.modernMeaning)}</td>
-      <td>${esc(r.firstPage)}</td>
+      <td>${show(item.lexicalField)}</td>
+      <td>${show(item.microfield)}</td>
+      <td>${show(item.modernMeaning)}</td>
+      <td>${show(item.firstPage)}</td>
     </tr>
   `).join("");
 
-  $("#cards").innerHTML=out.map(r=>`
-    <article class="card">
-      <h4>${esc(r.headword)}</h4>
-
-      <span class="${typeClass(r.type)}">
-        ${esc(r.type)}
-      </span>
-
-      <p>${esc(r.modernMeaning)}</p>
-
+  $("#cards").innerHTML=output.map(item=>`
+    <article class="card word-card" data-open="${item.id}" tabindex="0" role="button">
+      <h4>${show(item.headword)}</h4>
+      <span class="${typeClass(item.type)}">${show(item.type)}</span>
+      <p>${show(item.modernMeaning)}</p>
       <div class="meta">
-        ${esc(r.lexicalField)} ·
-        ${esc(r.microfield)} ·
-        ${esc(r.firstPage)}-sahifa
+        ${show(item.lexicalField)} ·
+        ${show(item.microfield)} ·
+        ${show(item.firstPage)}-sahifa
       </div>
+      <div class="open-hint">Batafsil ko‘rish →</div>
     </article>
   `).join("");
+}
+
+function handleOpen(event){
+  const target=event.target.closest("[data-open]");
+
+  if(target){
+    openDetails(target.dataset.open);
+  }
+}
+
+function handleKeyboard(event){
+  if(event.key!=="Enter"&&event.key!==" "){
+    return;
+  }
+
+  const target=event.target.closest("[data-open]");
+
+  if(target){
+    event.preventDefault();
+    openDetails(target.dataset.open);
+  }
 }
 
 async function getData(){
@@ -132,36 +194,51 @@ async function start(){
   $("#total").textContent=DATA.length;
 
   $("#hist").textContent=DATA.filter(
-    r=>norm(r.type).includes("istorizm")
+    item=>norm(item.type).includes("istorizm")
   ).length;
 
   $("#arch").textContent=DATA.filter(
-    r=>norm(r.type).includes("arxaizm")
+    item=>norm(item.type).includes("arxaizm")
   ).length;
 
   $("#macros").textContent=
-    new Set(DATA.map(r=>r.lexicalField)).size;
+    new Set(DATA.map(item=>item.lexicalField).filter(Boolean)).size;
 
-  opt($("#type"),DATA.map(r=>r.type));
-  opt($("#macro"),DATA.map(r=>r.lexicalField));
-  opt($("#micro"),DATA.map(r=>r.microfield));
+  addOptions($("#type"),DATA.map(item=>item.type));
+  addOptions($("#macro"),DATA.map(item=>item.lexicalField));
+  addOptions($("#micro"),DATA.map(item=>item.microfield));
 
-  ["q","type","macro","micro"].forEach(id=>
+  ["q","type","macro","micro"].forEach(id=>{
     $("#"+id).addEventListener(
-      id==="q"?"input":"change",
+      id==="q" ? "input" : "change",
       render
-    )
-  );
+    );
+  });
+
+  $("#rows").addEventListener("click",handleOpen);
+  $("#cards").addEventListener("click",handleOpen);
+  $("#rows").addEventListener("keydown",handleKeyboard);
+  $("#cards").addEventListener("keydown",handleKeyboard);
+
+  $("#closeDetails").addEventListener("click",()=>{
+    $("#details").close();
+  });
+
+  $("#details").addEventListener("click",event=>{
+    if(event.target===$("#details")){
+      $("#details").close();
+    }
+  });
 
   render();
 }
 
-start().catch(e=>{
+start().catch(error=>{
   document.body.innerHTML=`
     <main class="wrap">
       <section class="hero">
         <h2>Ma’lumotlar yuklanmadi</h2>
-        <p>${esc(e.message)}</p>
+        <p>${esc(error.message)}</p>
       </section>
     </main>
   `;
